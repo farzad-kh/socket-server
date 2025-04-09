@@ -1,11 +1,9 @@
-
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 
 const app = express();
 const port = parseInt(process.env.PORT || "3000", 10);
-
 const hostname = "0.0.0.0";
 
 const server = http.createServer(app);
@@ -17,37 +15,47 @@ const io = new Server(server, {
   },
 });
 
-const users = new Map(); // userId -> socketId
 
-global.io = io;
-global.users = users;
+app.use(express.json());
 
 io.on("connection", (socket) => {
-  console.log("Socket connected:", socket.id);
+  console.log("🔌 Socket connected:", socket.id);
 
   socket.on("join", (userId) => {
-    users.set(userId, socket.id);
-    console.log(`User ${userId} joined with socket ID ${socket.id}`);
+    socket.join(userId); // ✅ join the user to a room with their ID
+    console.log(`✅ User ${userId} joined room ${userId}`);
   });
 
   socket.on("disconnect", () => {
-    for (const [userId, socketId] of users.entries()) {
-      if (socketId === socket.id) {
-        users.delete(userId);
-        console.log(`User ${userId} disconnected`);
-        break;
-      }
-    }
+    console.log("❌ Socket disconnected:", socket.id);
   });
 
   socket.on("ping", (data) => {
-    console.log("Received ping:", data);
+    console.log("📡 Received ping:", data);
     socket.emit("pong", { msg: "pong from server ✅" });
   });
 });
 
+
+app.post("/emit-message", (req, res) => {
+  const { toUserId, message, unreadCount } = req.body;
+
+  if (!toUserId || !message) {
+    return res.status(400).json({ error: "Missing toUserId or message" });
+  }
+
+  console.log(`📨 Emitting message to room ${toUserId}`);
+
+  io.to(toUserId).emit("new_message", {
+    message,
+    unreadCount,
+  });
+
+  res.json({ status: "Message emitted ✅" });
+});
+
 app.get("/", (req, res) => {
-  res.send("Socket server is running ✅");
+  res.send("🚀 Socket server is running ✅");
 });
 
 server.listen(port, hostname, () => {
