@@ -8,6 +8,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "https://homevisions.vercel.app",
+    methods: ["GET", "POST"],
   },
 });
 
@@ -32,6 +33,9 @@ io.on("connection", (socket) => {
   });
 });
 
+app.get("/", (req, res) => {
+  res.send("Socket server is running ✅");
+});
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Socket server running on port ${PORT}`);
